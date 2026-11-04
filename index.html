@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 樂齡學習教練</title>
+<meta name="description" content="給長輩的 AI 學習教練：一天學一件事，學會用 AI、看穿詐騙。">
+<meta name="theme-color" content="#00623A">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="樂齡教練">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#DCEBE3;--paper:#FFFFFF;--ink:#12241C;--sub:#3C5249;--line:#9DB8AB;
+  --green:#00623A;--on-green:#FFFFFF;--red:#B8121B;--on-red:#FFFFFF;--yellow:#FFD23F;--soft:#EEF6F1;
+  --sans:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  --kai:'LXGW WenKai TC','BiauKai','DFKai-SB','標楷體',var(--sans);
+  --serif:'Noto Serif TC','PMingLiU','Songti TC',serif;
+  --mq:0px;
+}
+:root[data-theme="contrast"]{--bg:#000;--paper:#000;--ink:#FFF;--sub:#FFE66D;--line:#FFF;--green:#FFD23F;--on-green:#000;--red:#FF9C94;--on-red:#000;--soft:#1C1C1C}
+html{font-size:22px}
+html[data-fs="1"]{font-size:25px}
+html[data-fs="2"]{font-size:28px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:500;line-height:1.6;padding-top:var(--mq);-webkit-text-size-adjust:100%}
+body.has-marquee{--mq:34px}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--green);overflow-wrap:anywhere}
+:focus-visible{outline:4px solid var(--yellow);outline-offset:2px;box-shadow:0 0 0 7px var(--ink)}
+
+#marqueeBar{position:fixed;top:0;left:0;right:0;height:34px;background:var(--green);z-index:60;overflow:hidden;display:none;align-items:center}
+#marqueeBar.show{display:flex}
+#marqueeTrack{display:inline-block;white-space:nowrap;padding-left:100%;font-size:16px;font-weight:700;color:var(--on-green);animation:marquee-scroll 30s linear infinite}
+#marqueeBar:hover #marqueeTrack{animation-play-state:paused}
+@keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+.top{display:flex;align-items:center;gap:.4rem;max-width:640px;margin:0 auto;padding:.5rem 16px}
+.top{flex-wrap:wrap}
+.brand{flex:1 1 4.6em;min-width:0;font-family:var(--serif);font-weight:900;font-size:1.05rem;line-height:1.25}
+.tbtn{flex:none;min-height:2.5rem;padding:.2rem .6rem;border:2px solid var(--green);border-radius:.6rem;background:var(--paper);color:var(--green);font-weight:700;font-size:.82rem;cursor:pointer}
+main{max-width:640px;margin:0 auto;padding:0 16px calc(6rem + env(safe-area-inset-bottom))}
+body.focus main{padding-bottom:calc(6.5rem + env(safe-area-inset-bottom))}
+h2{font-family:var(--serif);font-weight:900;font-size:1.5rem;line-height:1.35;margin:.4rem 0 .7rem}
+p{margin:.4rem 0}
+.muted{color:var(--sub)}
+.coach{font-family:var(--kai);font-size:1.3rem;line-height:1.6}
+
+/* 大按鈕 */
+.btn{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;min-height:3.3rem;padding:.5rem 1rem;border:3px solid var(--green);border-radius:.8rem;background:var(--paper);color:var(--green);font-weight:700;font-size:1.05rem;line-height:1.3;cursor:pointer;text-decoration:none;text-align:center}
+.btn.main{background:var(--green);color:var(--on-green);font-size:1.2rem;min-height:3.8rem}
+.btn.red{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.btn:active{transform:translateY(2px)}
+.btn+.btn{margin-top:.6rem}
+.btn.text{border:0;background:none;text-decoration:underline;min-height:2.8rem}
+
+/* 下方三個大按鈕 */
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;background:var(--paper);border-top:3px solid var(--green);padding-bottom:env(safe-area-inset-bottom)}
+#nav button{flex:1;max-width:214px;min-height:4.2rem;padding:.3rem .1rem;border:0;background:none;color:var(--ink);font-weight:700;font-size:1rem;line-height:1.2;cursor:pointer}
+#nav button span{display:block;font-size:1.45rem;line-height:1.2}
+#nav button[aria-current="page"]{background:var(--green);color:var(--on-green)}
+body.focus #nav{display:none}
+
+/* 撕日曆 */
+.calwrap{position:relative;margin:.3rem 0 1rem}
+.cal{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:.3rem;overflow:hidden;box-shadow:0 4px 0 -1px var(--paper),0 4px 0 1px var(--ink),0 8px 0 -1px var(--paper),0 8px 0 1px var(--ink)}
+.cal-head{display:flex;justify-content:space-between;gap:.5rem;background:var(--red);color:var(--on-red);padding:1rem .8rem .3rem;font-weight:700;font-size:.95rem;position:relative}
+.cal-head::before{content:'';position:absolute;top:.3rem;left:0;right:0;height:.42rem;background:radial-gradient(circle at center,var(--bg) .2rem,transparent .22rem) 0 0/33.34% 100% repeat-x}
+.cal-num{text-align:center;font-family:var(--serif);font-weight:900;font-size:7.4rem;line-height:1.08;color:var(--green);letter-spacing:-.02em}
+.cal-num.holiday{color:var(--red)}
+.cal-week{display:flex;justify-content:center;gap:0 .8rem;flex-wrap:wrap;line-height:1.35;font-weight:700;font-size:1.05rem;padding:0 .8rem}
+.cal-yj{display:grid;grid-template-columns:1fr 1fr;margin:.6rem .8rem 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);font-family:var(--kai);font-size:1rem;line-height:1.35}
+.cal-yj div{padding:.35rem .3rem;display:flex;gap:.35rem}
+.cal-yj div+div{border-left:2px solid var(--ink)}
+.cal-yj b{font-size:1.25rem;line-height:1.1;flex:none}
+.cal-yj .yi b{color:var(--green)}.cal-yj .ji b{color:var(--red)}
+.cal-body{padding:.7rem .8rem .9rem}
+.cal-body .lab{font-weight:700;color:var(--sub);font-size:.9rem;margin:0}
+.cal-body .ttl{font-family:var(--serif);font-weight:900;font-size:1.5rem;line-height:1.3;margin:.05rem 0 .6rem}
+.tear{position:absolute;inset:0;z-index:5;transform-origin:15% 0;animation:tear .95s cubic-bezier(.5,0,.8,.4) forwards;pointer-events:none}
+@keyframes tear{0%{transform:none;opacity:1}25%{transform:rotate(-4deg)}100%{transform:translate(-14%,120%) rotate(-24deg);opacity:0}}
+
+/* 印章 */
+.stamp{display:inline-flex;align-items:center;justify-content:center;flex-direction:column;width:7.2rem;height:7.2rem;border:.28rem solid var(--red);border-radius:50%;color:var(--red);font-family:var(--kai);font-weight:700;font-size:1.5rem;line-height:1.15;transform:rotate(-9deg);box-shadow:inset 0 0 0 .1rem var(--paper),inset 0 0 0 .2rem var(--red);background:var(--paper)}
+.stamp small{font-size:.8rem;font-family:var(--sans)}
+.thump{animation:thump .45s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes thump{from{transform:scale(2.4) rotate(6deg);opacity:0}to{transform:scale(1) rotate(-9deg);opacity:1}}
+.center{text-align:center}
+.book{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin:.5rem 0 .9rem}
+.cell{position:relative;min-height:6.2rem;padding:.35rem;border:2px solid var(--line);border-radius:.5rem;background:var(--paper);color:var(--ink);font-size:.82rem;font-weight:700;line-height:1.3;cursor:pointer;text-align:left;overflow:hidden}
+.cell.next{border:3px solid var(--green)}
+.cell.done::after{content:'學會了';position:absolute;right:.2rem;bottom:.2rem;width:3.1rem;height:3.1rem;display:flex;align-items:center;justify-content:center;border:.15rem solid var(--red);border-radius:50%;color:var(--red);font-family:var(--kai);font-size:.68rem;transform:rotate(-9deg);background:var(--paper)}
+.unit{font-weight:900;margin:.8rem 0 0}
+
+/* 卡片、對話 */
+.card{background:var(--paper);border:2px solid var(--line);border-radius:.8rem;padding:.8rem;margin:.7rem 0}
+.bub{padding:.55rem .75rem;border-radius:.8rem;margin:.4rem 0;white-space:pre-line}
+.bub.me{background:var(--soft);border:2px solid var(--line)}
+.bub.ai{background:var(--paper);border:2px solid var(--green)}
+.bub small{display:block;font-weight:700;color:var(--sub);font-size:.8rem}
+.steps{list-style:none;margin:.4rem 0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;position:relative;padding:.35rem 0 .6rem 2.6rem;font-size:1.15rem;line-height:1.5}
+.steps li::before{content:counter(s);position:absolute;left:0;top:.3rem;width:2rem;height:2rem;border-radius:50%;background:var(--green);color:var(--on-green);font-weight:900;display:flex;align-items:center;justify-content:center}
+.ans{margin-top:.7rem;padding:.6rem .8rem;border-radius:.8rem;border:3px solid var(--green);background:var(--soft);font-size:1.1rem}
+.ans.no{border-color:var(--red)}
+.ans b{display:block;font-size:1.2rem}
+.pick.right{background:var(--green);color:var(--on-green)}
+.pick.wrong{border-color:var(--red);color:var(--red)}
+textarea,input[type=text],input[type=password],select{width:100%;min-height:3rem;padding:.5rem .6rem;border:3px solid var(--green);border-radius:.6rem;background:var(--paper);font-size:1.1rem}
+textarea{min-height:5rem;resize:vertical}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.6rem;margin-top:.6rem}
+.row2 .btn+.btn{margin-top:0}
+.row2 .btn{padding-left:.3rem;padding-right:.3rem}
+.lessonbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--paper);border-top:3px solid var(--green);padding:.5rem 16px calc(.5rem + env(safe-area-inset-bottom))}
+.lessonbar .in{max-width:608px;margin:0 auto;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.5rem}
+.lessonbar .in.one{grid-template-columns:minmax(0,1fr)}
+.lessonbar .btn{margin:0;white-space:nowrap;padding:.5rem .7rem}
+.ans+.btn{margin-top:.7rem}
+.pg{font-weight:700;color:var(--sub);margin:.3rem 0 0}
+.msg{background:var(--paper);border:3px solid var(--ink);border-radius:.8rem;padding:.7rem .8rem;margin:.6rem 0;font-size:1.2rem;line-height:1.5}
+.msg small{display:block;font-weight:700;color:var(--sub);font-size:.85rem;margin-bottom:.2rem}
+
+/* 常用設定 */
+.set-sec{border:2px solid var(--line);border-radius:.7rem;margin-bottom:.5rem;background:var(--paper)}
+.set-sec>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.6rem .7rem;font-weight:700;min-height:3rem}
+.set-sec>summary::-webkit-details-marker{display:none}
+.set-sec>summary::after{content:'▸';margin-left:.2rem;transition:transform .2s;flex:none}
+.set-sec[open]>summary::after{transform:rotate(90deg)}
+.set-sec .sst{flex:1 1 0;min-width:0}
+.set-sec .ssv{font-weight:500;font-size:.8rem;color:var(--sub);text-align:right}
+.set-in{padding:0 .7rem .8rem}
+.set-in label{display:block;font-weight:700;margin:.5rem 0 .2rem}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:.4rem}
+.seg button{min-width:0;overflow-wrap:anywhere;min-height:3rem;padding:.2rem;border:3px solid var(--green);border-radius:.6rem;background:var(--paper);color:var(--green);font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--green);color:var(--on-green)}
+
+.foot{margin-top:1.6rem;padding-top:.8rem;border-top:2px solid var(--line);font-size:.9rem;color:var(--sub)}
+.foot .row{display:flex;flex-wrap:wrap;gap:.3rem .9rem;align-items:center;margin:.4rem 0}
+.foot button,.foot a{background:none;border:0;padding:.3rem 0;color:var(--green);font-weight:700;text-decoration:underline;cursor:pointer;font-size:.95rem}
+#toast{position:fixed;left:16px;right:16px;bottom:6.2rem;z-index:90;max-width:520px;margin:0 auto;padding:.7rem 1rem;border-radius:.7rem;background:var(--ink);color:var(--bg);font-weight:700;text-align:center;display:none}
+#toast.show{display:block}
+
+.modal{position:fixed;inset:0;z-index:80;display:none;background:rgba(10,25,18,.7);padding:16px;overflow:auto}
+.modal.show{display:block}
+.modal .box{max-width:600px;margin:calc(var(--mq) + .3rem) auto;background:var(--paper);border:3px solid var(--ink);border-radius:.9rem;padding:1rem}
+.modal h2{margin-top:0}
+.modal ul{margin:.3rem 0 .8rem;padding-left:1.2rem}
+.modal li{margin:.35rem 0}
+.creator{background:var(--soft);border-radius:.6rem;padding:.6rem .7rem;font-size:.85rem;line-height:1.55;margin-bottom:.7rem}
+html[data-fs="1"] .cal-num,html[data-fs="2"] .cal-num{font-size:4.8rem}
+html[data-fs="1"] .brand,html[data-fs="2"] .brand{flex-basis:100%}
+html[data-fs="1"] .top .tbtn,html[data-fs="2"] .top .tbtn{flex:1}
+html[data-fs="1"] .greet,html[data-fs="2"] .greet,html[data-fs="2"] .cal-yj{display:none}
+@media (prefers-reduced-motion:reduce){.tear,.thump{animation:none}.tear{display:none}}
+@media (max-width:380px){.cal-num{font-size:6.2rem}.book{grid-template-columns:repeat(2,minmax(0,1fr))}.brand{font-size:.95rem}}
+</style>
+</head>
+<body>
+<div id="marqueeBar"><div id="marqueeTrack"></div></div>
+<header class="top" id="top">
+  <div class="brand">AI 樂齡學習教練</div>
+  <button class="tbtn" type="button" id="fsBtn">放大字</button>
+  <button class="tbtn" type="button" id="setBtn">⚙ 常用設定</button>
+</header>
+<main id="view" tabindex="-1"></main>
+<nav id="nav" aria-label="主要功能">
+  <button type="button" data-go="home"><span aria-hidden="true">📅</span>今天學</button>
+  <button type="button" data-go="ask"><span aria-hidden="true">💬</span>問教練</button>
+  <button type="button" data-go="scam"><span aria-hidden="true">🛡️</span>防詐騙</button>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="about" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+  <div class="box">
+    <h2 id="aboutTitle">⚠ 使用前請看</h2>
+    <ul>
+      <li>AI 可能說錯。<b>健康、用藥、金錢、法律</b>的事，請問醫師、藥師或專業人員。</li>
+      <li><b>不要輸入</b>身分證字號、銀行帳號、密碼。</li>
+      <li>課程只是教學，手機畫面可能和說明不同。</li>
+      <li>身體緊急打 <b>119</b>，疑似詐騙打 <b>165</b>。</li>
+      <li>學習紀錄只存在這支手機，不會上傳。</li>
+    </ul>
+    <div class="creator">
+      <b>👤 創作者：Mark Tsai（蔡豐全）</b><br>
+      勞動力發展署創業顧問、小型企業人力提升計畫顧問、SBIR 評審委員；專長企業診斷輔導與 AI 工具運用。<br>
+      聯絡：<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a>　<a href="manual.html#creator" target="_blank" rel="noopener">完整經歷</a><br>
+      訪客數 <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.aiseniorlearningcoach" alt="訪客次數" height="20" loading="lazy" style="vertical-align:middle">
+    </div>
+    <button class="btn main" type="button" id="aboutOk">我知道了</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+'use strict';
+var D = window.COACH_DATA, L = D.lessons, $ = function(id){ return document.getElementById(id); };
+var PREFIX = 'alc.', KEY = PREFIX + 'state', SET_KEY = PREFIX + 'settings', API_KEY = PREFIX + 'api', FOLD_KEY = PREFIX + 'fold', WARN_KEY = PREFIX + 'warnSeen';
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function load(k, d){ try{ var v = JSON.parse(lsGet(k)); return v && typeof v === 'object' ? Object.assign(d, v) : d; }catch(e){ return d; } }
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+var S = load(KEY, {done:{}, days:[], torn:'', scamBest:0});
+var C = load(SET_KEY, {fs:0, theme:'normal', rate:0.85, name:'', aiSite:'chatgpt'});
+var A = load(API_KEY, {provider:'gemini', key:'', model:''});
+function save(){ lsSet(KEY, JSON.stringify(S)); }
+function saveSet(){ lsSet(SET_KEY, JSON.stringify(C)); }
+
+/* ---------- 日期 ---------- */
+function ymd(d){ d = d || new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function addDays(d, n){ var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; }
+var MON = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'], WK = '日一二三四五六';
+function lunar(d){ try{ var p = new Intl.DateTimeFormat('zh-TW-u-ca-chinese', {month:'long', day:'numeric'}).formatToParts(d), m = '', n = ''; p.forEach(function(x){ if(x.type === 'month') m = x.value; if(x.type === 'day') n = x.value; }); return /^\d+$/.test(n) ? '農曆' + m + cnDay(+n) : '農曆' + m + n; }catch(e){ return ''; } }
+function cnDay(n){ var a = '一二三四五六七八九十'; if(n <= 10) return '初' + a[n - 1]; if(n < 20) return '十' + a[n - 11]; if(n === 20) return '二十'; if(n < 30) return '廿' + a[n - 21]; return '三十'; }
+function dayOfYear(d){ return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5); }
+function calHtml(d){
+  var al = D.almanac[dayOfYear(d) % D.almanac.length], w = d.getDay();
+  return '<div class="cal-head"><span>民國 ' + (d.getFullYear() - 1911) + ' 年</span><span>' + MON[d.getMonth()] + '</span></div>' +
+    '<div class="cal-num' + (w === 0 || w === 6 ? ' holiday' : '') + '">' + d.getDate() + '</div>' +
+    '<div class="cal-week"><span>星期' + WK[w] + '</span><span>' + lunar(d) + '</span></div>' +
+    '<div class="cal-yj"><div class="yi"><b>宜</b><span>' + esc(al[0]) + '</span></div><div class="ji"><b>忌</b><span>' + esc(al[1]) + '</span></div></div>';
+}
+
+/* ---------- 進度 ---------- */
+function nextLesson(){ for(var i = 0; i < L.length; i++){ if(!S.done[L[i].id]) return L[i]; } return null; }
+function doneCount(){ return Object.keys(S.done).length; }
+function weekDays(){ var now = new Date(), st = addDays(now, -((now.getDay() + 6) % 7)), s = ymd(st); return S.days.filter(function(x){ return x >= s; }).length; }
+function learnedToday(){ return S.days.indexOf(ymd()) >= 0; }
+var GAPS = [1, 3, 7, 14, 30];
+function dueReview(){
+  var t = ymd(), best = null;
+  L.forEach(function(l){ var r = S.done[l.id]; if(r && r.due && r.due <= t && (!best || r.due < S.done[best.id].due)) best = l; });
+  return S.reviewed === t ? null : best;
+}
+function markDone(l){
+  var d = new Date(), t = ymd(d);
+  if(!S.done[l.id]) S.done[l.id] = {date:t, box:0, due:ymd(addDays(d, GAPS[0]))};
+  if(S.days.indexOf(t) < 0) S.days.push(t);
+  S.days = S.days.slice(-400); save();
+}
+function reviewResult(l, ok){
+  var r = S.done[l.id]; r.box = ok ? Math.min(r.box + 1, GAPS.length - 1) : 0;
+  r.due = ymd(addDays(new Date(), GAPS[r.box])); S.reviewed = ymd(); save();
+}
+
+/* ---------- 朗讀與語音 ---------- */
+var synth = window.speechSynthesis, voice = null;
+function pickVoice(){ if(!synth) return; var v = synth.getVoices(); voice = v.filter(function(x){ return /zh[-_]TW/i.test(x.lang); })[0] || v.filter(function(x){ return /^zh/i.test(x.lang); })[0] || null; }
+if(synth){ pickVoice(); synth.onvoiceschanged = pickVoice; }
+function stopSpeak(){ if(synth) synth.cancel(); document.querySelectorAll('[data-read]').forEach(function(b){ b.textContent = '🔊 唸給我聽'; }); }
+function speak(text, btn){
+  if(!synth){ toast('這支手機不支援朗讀'); return; }
+  var was = btn && btn.textContent.indexOf('停止') >= 0; stopSpeak(); if(was) return;
+  var u = new SpeechSynthesisUtterance(text); u.lang = 'zh-TW'; u.rate = +C.rate || 0.85; if(voice) u.voice = voice;
+  u.onend = u.onerror = function(){ if(btn) btn.textContent = '🔊 唸給我聽'; };
+  if(btn) btn.textContent = '⏹ 停止朗讀';
+  synth.speak(u);
+}
+function readBtn(text){ return '<button class="btn" type="button" data-read="' + esc(text) + '">🔊 唸給我聽</button>'; }
+var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function toast(m){ var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function(){ t.classList.remove('show'); }, 3500); }
+function copy(text){
+  if(navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return false; });
+  var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); var ok = false; try{ ok = document.execCommand('copy'); }catch(e){} ta.remove(); return Promise.resolve(ok);
+}
+function aiName(){ return C.aiSite === 'gemini' ? 'Gemini' : 'ChatGPT'; }
+function openAI(q){
+  var url = C.aiSite === 'gemini' ? 'https://gemini.google.com/app' : 'https://chatgpt.com/?q=' + encodeURIComponent(q);
+  var w = window.open(url, '_blank', 'noopener');
+  copy(q).then(function(ok){ toast(C.aiSite === 'gemini' ? (ok ? '問題已複製，到 Gemini 按住輸入框選「貼上」' : '請把問題打進 Gemini') : '已打開 ChatGPT'); });
+  return w;
+}
+
+/* ---------- 畫面切換（手機返回鍵可用） ---------- */
+var view = 'home', tearing = false, LS = null;
+function go(v){ if(location.hash.slice(1) === v) render(); else location.hash = v; }
+window.addEventListener('hashchange', render);
+function setFocus(on){ document.body.classList.toggle('focus', on); }
+function render(){
+  stopSpeak();
+  view = location.hash.slice(1) || 'home';
+  if(view === 'lesson' && !LS) view = 'home';
+  var map = {home:vHome, ask:vAsk, scam:vScam, stamps:vStamps, settings:vSettings, lesson:vLesson};
+  (map[view] || vHome)();
+  setFocus(view === 'lesson');
+  if(view !== 'lesson'){ var b = document.querySelector('.lessonbar'); if(b) b.remove(); }
+  document.querySelectorAll('#nav button').forEach(function(b){ if(b.dataset.go === view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  window.scrollTo(0, 0);
+}
+function foot(){
+  return '<div class="foot"><div>👤 創作者 Mark Tsai（蔡豐全）　<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></div>' +
+    '<div class="row"><a href="manual.html" target="_blank" rel="noopener">📖 操作手冊</a><button type="button" data-warn>⚠ 使用警語</button><button type="button" data-install>📲 加入主畫面</button></div>' +
+    '<div>訪客數 <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.aiseniorlearningcoach" alt="訪客次數" height="20" loading="lazy" style="vertical-align:middle"></div></div>';
+}
+
+/* ---------- 今天學 ---------- */
+function vHome(){
+  var now = new Date(), t = ymd(now), nx = nextLesson(), name = C.name ? esc(C.name) : '';
+  var torn = S.torn === t, show = torn ? addDays(now, 1) : now, body;
+  if(!nx && !torn) body = '<p class="ttl">24 課全部學會了</p><button class="btn main" type="button" data-go="stamps">看我的印章</button>';
+  else if(torn) body = '<p class="lab">今天學完了，明天見</p><p class="ttl">' + (nx ? '明天學：' + esc(nx.t) : '24 課全部學會了') + '</p>' + (nx ? '<button class="btn text" type="button" data-start="' + nx.id + '">還想學，再學一課</button>' : '');
+  else body = '<p class="lab">' + (learnedToday() ? '今天再多學一課' : '今天學這一課') + '</p><p class="ttl">' + esc(nx.t) + '</p><button class="btn main" type="button" data-start="' + nx.id + '">開始學（約 5 分鐘）</button>';
+  $('view').innerHTML = '<p class="coach greet">' + (name ? name + '，' : '') + '您好。今天學一件事就好。</p>' +
+    '<div class="calwrap" id="calwrap"><div class="cal">' + calHtml(show) + '<div class="cal-body">' + body + '</div></div></div>' +
+    '<button class="btn" type="button" data-go="stamps">我的印章：' + doneCount() + ' 個（本週學了 ' + weekDays() + ' 天）</button>' + foot();
+  bindInstall();
+  if(tearing){
+    tearing = false;
+    var p = document.createElement('div'); p.className = 'cal tear'; p.setAttribute('aria-hidden', 'true');
+    p.innerHTML = calHtml(now) + '<div class="center" style="padding:.8rem"><span class="stamp">學會了</span></div>';
+    $('calwrap').appendChild(p); setTimeout(function(){ p.remove(); }, 1000);
+  }
+}
+
+/* ---------- 上課：一頁一件事 ---------- */
+function startLesson(id){
+  var l = L.filter(function(x){ return x.id === id; })[0]; if(!l) return;
+  var rv = dueReview(), pages = [];
+  if(rv && rv.id !== id) pages.push({k:'review', l:rv});
+  pages.push({k:'say'}, {k:'try'}, {k:'quiz'}, {k:'stamp'});
+  LS = {l:l, pages:pages, i:0, picked:null, again:!!S.done[id]};
+  go('lesson');
+}
+function vLesson(){
+  var l = LS.l, p = LS.pages[LS.i], n = LS.pages.length - 1, html = '';
+  var label = p.k === 'review' ? '先複習一題' : p.k === 'stamp' ? '' : '第 ' + (LS.pages.slice(0, LS.i + 1).filter(function(x){ return x.k !== 'review'; }).length) + ' 步，共 3 步';
+  if(label) html += '<p class="pg">' + label + '</p>';
+  if(p.k === 'say'){
+    html += '<h2>' + esc(l.t) + '</h2><div class="coach">' + l.say.map(function(s){ return '<p>' + esc(s) + '</p>'; }).join('') + '</div>' +
+      '<div class="bub me"><small>有人這樣問</small>' + esc(l.ex.q) + '</div><div class="bub ai"><small>回答</small>' + esc(l.ex.a) + '</div>' +
+      readBtn(l.say.join('') + '例如：' + l.ex.q + l.ex.a);
+  } else if(p.k === 'try'){
+    html += '<h2>動手試試看</h2><ol class="steps">' + l.try.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
+    if(l.ask) html += '<div class="bub me"><small>可以這樣問</small>' + esc(l.ask) + '</div><button class="btn" type="button" data-openai="' + esc(l.ask) + '">到 ' + aiName() + ' 問這句話</button>';
+    html += readBtn(l.try.join('')) + '<button class="btn text" type="button" id="stuck">我卡住了，傳給家人</button>';
+  } else if(p.k === 'quiz' || p.k === 'review'){
+    var q = (p.k === 'review' ? p.l : l).quiz;
+    html += '<h2>' + esc(q.q) + '</h2>' + q.o.map(function(o, i){
+      var cls = LS.picked === null ? '' : i === q.a ? ' right' : i === LS.picked ? ' wrong' : '';
+      return '<button class="btn pick' + cls + '" type="button" data-pick="' + i + '">' + esc(o) + '</button>';
+    }).join('');
+    if(LS.picked !== null) html += '<div class="ans' + (LS.picked === q.a ? '' : ' no') + '"><b>' + (LS.picked === q.a ? '答對了' : '沒關係，正確答案在綠色按鈕') + '</b>' + esc(q.why) + '</div>';
+    html += readBtn(q.q + '第一個，' + q.o[0] + '。第二個，' + q.o[1] + '。');
+  } else {
+    html += '<div class="center" style="padding-top:1.4rem"><span class="stamp thump">學會了<small>' + ymd().slice(5).replace('-', '/') + '</small></span>' +
+      '<h2 style="margin-top:1.2rem">「' + esc(l.t) + '」學會了</h2><p class="coach">' + (LS.again ? '複習完了，又記得更牢。' : '今天到這裡就夠了，記得起來走走。') + '</p></div>';
+  }
+  $('view').innerHTML = html;
+  var bar = document.querySelector('.lessonbar'); if(!bar){ bar = document.createElement('div'); bar.className = 'lessonbar'; document.body.appendChild(bar); }
+  var needPick = (p.k === 'quiz' || p.k === 'review') && LS.picked === null, last = LS.i === n;
+  var nextBtn = needPick ? '<button class="btn" type="button" disabled style="opacity:.55">請先選一個答案</button>' : '<button class="btn main" type="button" id="next">' + (last ? (LS.again ? '回到今天' : '撕下今天的日曆') : '下一步') + '</button>';
+  var backBtn = LS.i > 0 && !last ? '<button class="btn" type="button" id="prev">上一步</button>' : (last ? '' : '<button class="btn" type="button" id="quit">先離開</button>');
+  bar.innerHTML = '<div class="in' + (backBtn ? '' : ' one') + '">' + backBtn + nextBtn + '</div>';
+  if($('next')) $('next').onclick = function(){
+    stopSpeak();
+    if(last){ if(!LS.again){ S.torn = ymd(); save(); tearing = true; } LS = null; bar.remove(); go('home'); return; }
+    LS.i++; LS.picked = null; if(LS.pages[LS.i].k === 'stamp') markDone(l); render();
+  };
+  if($('prev')) $('prev').onclick = function(){ LS.i--; LS.picked = null; render(); };
+  if($('quit')) $('quit').onclick = function(){ LS = null; bar.remove(); go('home'); };
+  if($('stuck')) $('stuck').onclick = function(){ window.open('https://line.me/R/share?text=' + encodeURIComponent('我在學用 AI，「' + l.t + '」這一課卡住了，可以幫我看一下嗎？'), '_blank', 'noopener'); };
+}
+
+/* ---------- 問教練 ---------- */
+var askText = '', askAns = null, busy = false;
+function guard(q){
+  if(/[A-Za-z][12]\d{8}/.test(q) || /\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{1,4}/.test(q)) return {block:1, a:'您打的內容好像有身分證或卡號。\n這些資料不要告訴任何 AI，請把它刪掉再問。'};
+  if(/胸痛|胸悶|喘不過氣|中風|昏倒|大量出血|嘴歪|半邊.{0,3}(麻|無力)/.test(q)) return {a:'這可能很緊急，請馬上打 119。\n不要等，也不要自己開車去醫院。', call:'119'};
+  if(/想死|不想活|自殺|活著沒意思/.test(q)) return {a:'謝謝您說出來，您不用一個人扛。\n請打 1925 安心專線，24 小時都有人陪您談。\n也請告訴一位信任的家人。', call:'1925'};
+  return null;
+}
+function faq(q){
+  var s = q.toLowerCase(), best = null, bs = 0;
+  D.faq.forEach(function(f){ var n = 0; f.k.forEach(function(k){ if(s.indexOf(k) >= 0) n += k.length; }); if(n > bs){ bs = n; best = f; } });
+  return best;
+}
+function vAsk(){
+  var has = !!A.key, html = '<h2>問教練</h2><p class="muted" style="margin-top:-.4rem">有不懂的就問，問幾次都可以。</p>';
+  if(askAns){
+    html += '<div class="bub me"><small>您問</small>' + esc(askText) + '</div><div class="bub ai coach"><small>教練說</small>' + esc(askAns.a) + '</div>' + readBtn(askAns.a);
+    if(askAns.call) html += '<a class="btn red" href="tel:' + askAns.call + '">📞 打 ' + askAns.call + '</a>';
+    else if(askAns.scam) html += '<a class="btn red" href="tel:165">📞 打 165 反詐騙專線</a>';
+    if(!askAns.block && !askAns.call) html += '<button class="btn" type="button" data-openai="' + esc(askText) + '">到 ' + aiName() + ' 問這句話</button>';
+    html += '<button class="btn main" type="button" id="again">再問一題</button>';
+  } else {
+    html += '<textarea id="q" aria-label="想問的問題" placeholder="在這裡打字">' + esc(askText) + '</textarea><div class="row2">' +
+      (Rec ? '<button class="btn" type="button" id="mic">🎤 用講的</button>' : '') + '<button class="btn main" type="button" id="send"' + (Rec ? '' : ' style="grid-column:1/-1"') + '>' + (busy ? '教練想一下…' : '問教練') + '</button></div>' +
+      (Rec ? '' : '<p class="muted">想用講的，按手機鍵盤上的麥克風。</p>') +
+      '<p style="font-weight:700;margin-top:1rem">或按一個常見問題：</p>' + D.quick.map(function(q){ return '<button class="btn" type="button" data-quick="' + esc(q) + '">' + esc(q) + '</button>'; }).join('') +
+      (has ? '' : '<p class="muted" style="font-size:.85rem;margin-top:.7rem">目前用內建答案回答。</p>');
+  }
+  $('view').innerHTML = html + foot(); bindInstall();
+  if($('again')) $('again').onclick = function(){ askAns = null; askText = ''; vAsk(); window.scrollTo(0, 0); };
+  if($('send')) $('send').onclick = function(){ ask($('q').value); };
+  if($('mic')) $('mic').onclick = listen;
+}
+function listen(){
+  var b = $('mic'), r;
+  try{ r = new Rec(); }catch(e){ toast('請改按手機鍵盤上的麥克風'); return; }
+  r.lang = 'zh-TW'; r.interimResults = false;
+  b.textContent = '🎤 請說話…';
+  r.onresult = function(e){ var t = e.results[0][0].transcript, q = $('q'); if(q) q.value = (q.value + t).trim(); };
+  r.onerror = function(){ toast('沒聽清楚，請再按一次，或用打字'); };
+  r.onend = function(){ if($('mic')) $('mic').textContent = '🎤 用講的'; };
+  r.start();
+}
+function ask(q){
+  q = String(q || '').trim(); if(!q){ toast('請先打字或用講的'); return; } if(busy) return;
+  askText = q;
+  var g = guard(q); if(g){ askAns = g; vAsk(); window.scrollTo(0, 0); return; }
+  var isScam = /匯款|匯錢|轉帳|解除分期|監管|投資群組|保證獲利|飆股|驗證碼/.test(q), f = faq(q);
+  if(A.key){
+    busy = true; vAsk();
+    callLLM(q).then(function(t){ askAns = {a:t, scam:isScam}; }).catch(function(){ askAns = {a:(f ? f.a + '\n\n' : '') + (f ? '（AI 沒有連上，這是內建答案。）' : 'AI 沒有連上。請家人檢查「⚙ 常用設定」裡的金鑰。'), scam:isScam}; })
+      .then(function(){ busy = false; if(view === 'ask'){ vAsk(); window.scrollTo(0, 0); } });
+    return;
+  }
+  askAns = f ? {a:f.a, scam:isScam} : {a:'這一題內建答案沒有。\n按下面的按鈕，把問題帶去 ' + aiName() + ' 問。\n記得不要打個人資料。', scam:isScam};
+  vAsk(); window.scrollTo(0, 0);
+}
+var SYS = '你是「樂齡學習教練」，對象是 60 歲以上、不熟悉科技的台灣長輩。用繁體中文（台灣用語）、尊稱「您」，語氣溫和不說教，不用專業術語、不用 Markdown 符號。回答最多 5 行，每行一句短句；操作問題分步驟。不做醫療診斷、不建議用藥、不給投資建議，這類問題請對方問醫師、藥師或專業人員。涉及匯款、投資、陌生連結一律提醒可能是詐騙並請打 165。提醒不要提供身分證字號、帳號、密碼。';
+var MODELS = {gemini:'gemini-2.5-flash', openai:'gpt-5-mini', claude:'claude-haiku-5-5', openrouter:'openai/gpt-5-mini'};
+function callLLM(q){
+  var m = A.model || MODELS[A.provider], p, url;
+  function j(r){ if(!r.ok) throw new Error(r.status); return r.json(); }
+  if(A.provider === 'gemini'){
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent', {method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':A.key}, body:JSON.stringify({systemInstruction:{parts:[{text:SYS}]}, contents:[{role:'user', parts:[{text:q}]}]})})
+      .then(j).then(function(d){ return d.candidates[0].content.parts.map(function(x){ return x.text || ''; }).join('').trim(); });
+  }
+  if(A.provider === 'claude'){
+    return fetch('https://api.anthropic.com/v1/messages', {method:'POST', headers:{'Content-Type':'application/json','x-api-key':A.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}, body:JSON.stringify({model:m, max_tokens:600, system:SYS, messages:[{role:'user', content:q}]})})
+      .then(j).then(function(d){ return d.content.map(function(x){ return x.text || ''; }).join('').trim(); });
+  }
+  url = A.provider === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+  p = {model:m, messages:[{role:'system', content:SYS}, {role:'user', content:q}]};
+  return fetch(url, {method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer ' + A.key}, body:JSON.stringify(p)}).then(j).then(function(d){ return d.choices[0].message.content.trim(); });
+}
+
+/* ---------- 防詐騙 ---------- */
+var SC = null;
+function vScam(){
+  var html = '';
+  if(!SC){
+    html = '<h2>防詐騙</h2><a class="btn red" href="tel:165">📞 打 165 反詐騙專線</a>' +
+      '<button class="btn main" type="button" id="chk" style="margin-top:.6rem">我收到可疑訊息</button>' +
+      '<button class="btn" type="button" id="prac">練習看穿騙術</button>' +
+      '<div class="card"><p class="coach" style="margin:0">記住三個字：<br><b>聽</b>　先聽清楚對方要什麼<br><b>掛</b>　要錢要資料就掛掉<br><b>查</b>　打 165 或問家人</p></div>' + foot();
+  } else if(SC.mode === 'check'){
+    if(SC.i < D.check.length){
+      html = '<p class="pg">第 ' + (SC.i + 1) + ' 題，共 ' + D.check.length + ' 題</p><h2>' + esc(D.check[SC.i]) + '</h2><div class="row2"><button class="btn main" type="button" data-c="1">有</button><button class="btn main" type="button" data-c="0">沒有</button></div>' + readBtn(D.check[SC.i]).replace('class="btn"', 'class="btn" style="margin-top:.6rem"');
+    } else if(SC.yes > 0){
+      html = '<div class="ans no"><b>很可能是詐騙</b>不要回覆、不要匯錢、不要點連結。</div><a class="btn red" href="tel:165" style="margin-top:.7rem">📞 打 165 問一下</a><button class="btn" type="button" id="back">回防詐騙</button>';
+    } else {
+      html = '<div class="ans"><b>目前沒有看到明顯的詐騙特徵</b>還是不放心的話，問家人或打 165。</div><button class="btn" type="button" id="back" style="margin-top:.7rem">回防詐騙</button>';
+    }
+  } else {
+    if(SC.i < D.scenes.length){
+      var s = D.scenes[SC.i];
+      html = '<p class="pg">第 ' + (SC.i + 1) + ' 題，共 ' + D.scenes.length + ' 題</p><h2>這是詐騙嗎？</h2><div class="msg"><small>' + esc(s.kind) + '・' + esc(s.from) + '</small>' + esc(s.msg) + '</div>';
+      if(SC.ans === null) html += '<div class="row2"><button class="btn main" type="button" data-s="1">是詐騙</button><button class="btn main" type="button" data-s="0">不是</button></div>' + readBtn(s.msg).replace('class="btn"', 'class="btn" style="margin-top:.6rem"');
+      else { var ok = SC.ans === s.scam; html += '<div class="ans' + (ok ? '' : ' no') + '"><b>' + (ok ? '答對了' : '這題' + (s.scam ? '是詐騙' : '不是詐騙')) + '</b>' + esc(s.why) + '</div><button class="btn main" type="button" id="snext" style="margin-top:.7rem">下一題</button>'; }
+    } else {
+      html = '<div class="center"><h2>答對 ' + SC.score + ' 題，共 ' + D.scenes.length + ' 題</h2><p class="coach">要錢、要資料、要您保密，就先掛掉。</p></div><button class="btn main" type="button" id="back">回防詐騙</button>';
+    }
+  }
+  $('view').innerHTML = html; bindInstall();
+  function on(id, fn){ if($(id)) $(id).onclick = fn; }
+  on('chk', function(){ SC = {mode:'check', i:0, yes:0}; vScam(); window.scrollTo(0, 0); });
+  on('prac', function(){ SC = {mode:'prac', i:0, ans:null, score:0}; vScam(); window.scrollTo(0, 0); });
+  on('back', function(){ SC = null; vScam(); window.scrollTo(0, 0); });
+  on('snext', function(){ SC.i++; SC.ans = null; if(SC.i >= D.scenes.length){ S.scamBest = Math.max(S.scamBest || 0, SC.score); save(); } vScam(); window.scrollTo(0, 0); });
+}
+
+/* ---------- 我的印章（也是全部課程） ---------- */
+function vStamps(){
+  var nx = nextLesson(), html = '<h2>我的印章</h2><p class="muted" style="margin-top:-.4rem">已蓋 ' + doneCount() + ' 個，共 ' + L.length + ' 個。按一課可以再看一次。</p>', unit = '';
+  L.forEach(function(l, i){
+    if(l.u !== unit){ if(unit) html += '</div>'; unit = l.u; html += '<p class="unit">' + esc(unit) + '</p><div class="book">'; }
+    html += '<button class="cell' + (S.done[l.id] ? ' done' : '') + (nx && nx.id === l.id ? ' next' : '') + '" type="button" data-start="' + l.id + '">' + esc(l.t) + (S.done[l.id] ? '<span style="position:absolute;left:-9999px">，已學會</span>' : '') + '</button>';
+  });
+  $('view').innerHTML = html + '</div>' + foot(); bindInstall();
+}
+
+/* ---------- 常用設定 ---------- */
+function vSettings(){
+  var fsN = ['標準','大','特大'];
+  function sec(id, title, val, body){ return '<details class="set-sec" data-sec="' + id + '"><summary><span class="sst">' + title + '</span><span class="ssv">' + esc(val) + '</span></summary><div class="set-in">' + body + '</div></details>'; }
+  function seg(k, opts){ return '<div class="seg">' + opts.map(function(o){ return '<button type="button" data-set="' + k + '" data-v="' + o[0] + '" aria-pressed="' + (String(C[k]) === String(o[0])) + '">' + o[1] + '</button>'; }).join('') + '</div>'; }
+  var h = '<h2>⚙ 常用設定</h2><div class="row2" style="margin-bottom:.6rem"><button class="btn" type="button" id="foldOpen">全部展開</button><button class="btn" type="button" id="foldClose">全部收合</button></div>' +
+    sec('fs', '字體大小', fsN[C.fs], seg('fs', [[0,'標準'],[1,'大'],[2,'特大']])) +
+    sec('theme', '畫面顏色', C.theme === 'contrast' ? '高對比' : '一般', seg('theme', [['normal','一般'],['contrast','高對比']])) +
+    sec('voice', '朗讀速度', C.rate <= 0.7 ? '慢' : C.rate >= 1 ? '正常' : '稍慢', seg('rate', [[0.7,'慢'],[0.85,'稍慢'],[1,'正常']]) + '<button class="btn" type="button" data-read="您好，這是朗讀的速度。" style="margin-top:.6rem">🔊 唸給我聽</button>') +
+    sec('name', '我的稱呼', C.name || '未設定', '<label for="nm">教練怎麼稱呼您</label><input type="text" id="nm" maxlength="12" placeholder="例如：王大姐" value="' + esc(C.name) + '">') +
+    sec('ai', 'AI 連線（請家人幫忙）', A.key ? '已設定' : '未設定', '<label>要帶去問的 AI</label>' + seg('aiSite', [['chatgpt','ChatGPT'],['gemini','Gemini']]) +
+      '<p class="muted" style="font-size:.85rem">填了金鑰，「問教練」就會由 AI 回答。金鑰只存在這支手機，費用由金鑰帳號負擔；不填也能用內建答案。</p>' +
+      '<label for="pv">服務</label><select id="pv">' + [['gemini','Google Gemini'],['openai','OpenAI'],['claude','Anthropic Claude'],['openrouter','OpenRouter']].map(function(o){ return '<option value="' + o[0] + '"' + (A.provider === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+      '<label for="ky">API 金鑰</label><input type="password" id="ky" autocomplete="off" value="' + esc(A.key) + '"><label for="md">模型（可留白）</label><input type="text" id="md" placeholder="' + esc(MODELS[A.provider]) + '" value="' + esc(A.model) + '">') +
+    sec('data', '資料備份', '', '<button class="btn" type="button" id="exp">下載學習紀錄</button><button class="btn" type="button" id="imp">載入學習紀錄</button><input type="file" id="impF" accept="application/json" hidden><button class="btn" type="button" id="clr" style="border-color:var(--red);color:var(--red)">清除這支手機的全部資料</button>') +
+    sec('about', '關於本工具', '', '<p>👤 創作者 Mark Tsai（蔡豐全）<br><a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a></p><a class="btn" href="manual.html" target="_blank" rel="noopener">📖 操作手冊</a><button class="btn" type="button" data-warn>⚠ 使用警語</button><button class="btn" type="button" data-install>📲 加入主畫面</button><p>訪客數 <img src="https://visitor-badge.laobi.icu/badge?page_id=m255525.aiseniorlearningcoach" alt="訪客次數" height="20" loading="lazy" style="vertical-align:middle"></p>');
+  $('view').innerHTML = h; bindInstall();
+  var open = []; try{ open = JSON.parse(lsGet(FOLD_KEY) || '[]') || []; }catch(e){}
+  var secs = document.querySelectorAll('.set-sec');
+  secs.forEach(function(d){ d.open = open.indexOf(d.dataset.sec) >= 0; d.addEventListener('toggle', saveFold); });
+  function saveFold(){ var o = []; document.querySelectorAll('.set-sec').forEach(function(d){ if(d.open) o.push(d.dataset.sec); }); lsSet(FOLD_KEY, JSON.stringify(o)); }
+  $('foldOpen').onclick = function(){ secs.forEach(function(d){ d.open = true; }); };
+  $('foldClose').onclick = function(){ secs.forEach(function(d){ d.open = false; }); };
+  $('nm').onchange = function(){ C.name = this.value.trim(); saveSet(); toast('已記住稱呼'); };
+  function saveApi(){ A.provider = $('pv').value; A.key = $('ky').value.trim(); A.model = $('md').value.trim(); lsSet(API_KEY, JSON.stringify(A)); $('md').placeholder = MODELS[A.provider]; toast('已儲存'); }
+  ['pv','ky','md'].forEach(function(id){ $(id).onchange = saveApi; });
+  $('exp').onclick = function(){ var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify({state:S, settings:C}, null, 1)], {type:'application/json'})); a.download = '樂齡教練學習紀錄_' + ymd() + '.json'; a.click(); };
+  $('imp').onclick = function(){ $('impF').click(); };
+  $('impF').onchange = function(){ var f = this.files[0]; if(!f) return; f.text().then(function(t){ var d = JSON.parse(t); if(!d.state || !d.state.done) throw 0; lsSet(KEY, JSON.stringify(d.state)); if(d.settings) lsSet(SET_KEY, JSON.stringify(d.settings)); location.reload(); }).catch(function(){ toast('這個檔案不是學習紀錄'); }); };
+  $('clr').onclick = function(){ if(!confirm('確定要清除嗎？印章和設定都會消失。')) return; [KEY, SET_KEY, API_KEY, FOLD_KEY, WARN_KEY, PREFIX + 'marquee'].forEach(lsDel); location.hash = ''; location.reload(); };
+}
+function applySet(){ document.documentElement.dataset.fs = C.fs; document.documentElement.dataset.theme = C.theme; $('fsBtn').textContent = C.fs >= 2 ? '字變小' : '放大字'; }
+
+/* ---------- 事件委派 ---------- */
+document.addEventListener('click', function(e){
+  var t = e.target.closest('button,a'); if(!t) return; var d = t.dataset;
+  if(d.go){ if(d.go === 'scam') SC = null; if(d.go === 'ask' && !busy){ askAns = null; askText = ''; } go(d.go); }
+  else if(d.start) startLesson(d.start);
+  else if(d.read !== undefined) speak(d.read, t);
+  else if(d.openai) openAI(d.openai);
+  else if(d.quick) ask(d.quick);
+  else if(d.warn !== undefined) $('about').classList.add('show');
+  else if(d.pick !== undefined && LS && LS.picked === null){
+    var p = LS.pages[LS.i]; LS.picked = +d.pick;
+    if(p.k === 'review') reviewResult(p.l, LS.picked === p.l.quiz.a);
+    vLesson();
+  }
+  else if(d.c !== undefined){ SC.yes += +d.c; SC.i++; vScam(); window.scrollTo(0, 0); }
+  else if(d.s !== undefined){ SC.ans = d.s === '1'; if(SC.ans === D.scenes[SC.i].scam) SC.score++; vScam(); }
+  else if(d.set){ var k = d.set, v = d.v; C[k] = k === 'fs' || k === 'rate' ? +v : v; saveSet(); applySet(); vSettings(); }
+});
+$('fsBtn').onclick = function(){ C.fs = (C.fs + 1) % 3; saveSet(); applySet(); toast('字體：' + ['標準','大','特大'][C.fs]); };
+$('setBtn').onclick = function(){ go('settings'); };
+$('aboutOk').onclick = function(){ $('about').classList.remove('show'); lsSet(WARN_KEY, '1'); };
+
+/* ---------- 跑馬燈（必備，不可關閉） ---------- */
+function initMarquee(){
+  var URL_ = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
+  var MK = PREFIX + 'marquee', REFRESH = 20 * 60 * 1000, bar = $('marqueeBar'), track = $('marqueeTrack'), lastKey = null;
+  function loadCache(){ try{ return JSON.parse(lsGet(MK) || '[]'); }catch(e){ return []; } }
+  function appendText(c, text){ var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, li = 0, m; while((m = re.exec(text))){ if(m.index > li) c.appendChild(document.createTextNode(text.slice(li, m.index))); var a = document.createElement('a'); a.href = m[2]; a.textContent = m[1]; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.color = 'inherit'; a.style.textDecoration = 'underline'; c.appendChild(a); li = re.lastIndex; } if(li < text.length) c.appendChild(document.createTextNode(text.slice(li))); }
+  function renderM(items){
+    if(!items || !items.length) return;
+    var k = JSON.stringify(items); if(k === lastKey) return; lastKey = k; track.innerHTML = '';
+    var fr = document.createDocumentFragment();
+    function pass(){ items.forEach(function(it, i){ if(i > 0) fr.appendChild(document.createTextNode('　★　')); appendText(fr, String(it)); }); }
+    pass(); fr.appendChild(document.createTextNode('　★　')); pass(); track.appendChild(fr);
+    bar.classList.add('show'); document.body.classList.add('has-marquee');
+    track.style.animationDuration = Math.max(track.scrollWidth / 2 / 60, 12) + 's';
+  }
+  function fetchM(){ fetch(URL_, {method:'POST', body:JSON.stringify({serial:''})}).then(function(r){ return r.json(); }).then(function(d){ if(d && Array.isArray(d.marquee) && d.marquee.length){ lsSet(MK, JSON.stringify(d.marquee)); renderM(d.marquee); } }).catch(function(){}); }
+  renderM(loadCache()); fetchM(); setInterval(fetchM, REFRESH);
+}
+
+/* ---------- 加入主畫面 ---------- */
+var dp = null, ua = navigator.userAgent || '';
+var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp = e; });
+window.addEventListener('appinstalled', function(){ dp = null; toast('已加入主畫面'); });
+function bindInstall(){
+  document.querySelectorAll('[data-install]').forEach(function(b){
+    if(standalone){ b.style.display = 'none'; return; }
+    b.onclick = function(){ var m = ios ? '請按畫面上的「分享」圖示，選「加入主畫面」' : '請按瀏覽器右上角選單，選「加到主畫面」'; if(!dp){ toast(m); return; } try{ dp.prompt(); dp.userChoice.then(function(){ dp = null; }); }catch(e){ toast(m); } };
+  });
+}
+if('serviceWorker' in navigator && location.protocol !== 'file:'){ window.addEventListener('load', function(){ navigator.serviceWorker.register('service-worker.js').catch(function(){}); }); }
+
+applySet(); initMarquee(); render();
+if(!lsGet(WARN_KEY)) $('about').classList.add('show');
+window._alc = {S:S, C:C, L:L, guard:guard, faq:faq, nextLesson:nextLesson, dueReview:dueReview, markDone:markDone, startLesson:startLesson, ymd:ymd, lunar:lunar};
+})();
+</script>
+</body>
+</html>
