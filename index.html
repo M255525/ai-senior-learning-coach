@@ -8,8 +8,10 @@
 <meta name="theme-color" content="#00623A">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="樂齡教練">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -152,6 +154,12 @@ textarea{min-height:5rem;resize:vertical}
 .modal h2{margin-top:0}
 .modal ul{margin:.3rem 0 .8rem;padding-left:1.2rem}
 .modal li{margin:.35rem 0}
+.steps{list-style:none;margin:.5rem 0 .9rem;padding:0;counter-reset:s}
+.steps li{counter-increment:s;position:relative;min-height:1.9rem;margin:.55rem 0;padding-left:2.5rem;font-weight:700}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;display:flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border-radius:50%;background:var(--green);color:var(--on-green)}
+.inst-act{position:sticky;bottom:-16px;margin:0 -1rem -1rem;padding:.5rem 1rem calc(.2rem + 16px);background:var(--paper);border-top:2px solid var(--line);border-radius:0 0 .7rem .7rem}
+.inst-act .row2 .btn{margin:0;white-space:nowrap;font-size:.9rem}
+.steps .ic{width:1.35em;height:1.35em;vertical-align:-.28em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .creator{background:var(--soft);border-radius:.6rem;padding:.6rem .7rem;font-size:.85rem;line-height:1.55;margin-bottom:.7rem}
 html[data-fs="1"] .cal-num,html[data-fs="2"] .cal-num{font-size:4.8rem}
 html[data-fs="1"] .brand,html[data-fs="2"] .brand{flex-basis:100%}
@@ -195,6 +203,8 @@ html[data-fs="1"] .greet,html[data-fs="2"] .greet,html[data-fs="2"] .cal-yj{disp
     <button class="btn main" type="button" id="aboutOk">我知道了</button>
   </div>
 </div>
+
+<div class="modal" id="inst" role="dialog" aria-modal="true" aria-labelledby="instTitle"><div class="box" id="instBox"></div></div>
 
 <script src="data.js"></script>
 <script>
@@ -293,6 +303,7 @@ window.addEventListener('hashchange', render);
 function setFocus(on){ document.body.classList.toggle('focus', on); }
 function render(){
   stopSpeak();
+  closeInstall();
   view = location.hash.slice(1) || 'home';
   if(view === 'lesson' && !LS) view = 'home';
   var map = {home:vHome, ask:vAsk, scam:vScam, stamps:vStamps, settings:vSettings, lesson:vLesson};
@@ -317,7 +328,7 @@ function vHome(){
   else body = '<p class="lab">' + (learnedToday() ? '今天再多學一課' : '今天學這一課') + '</p><p class="ttl">' + esc(nx.t) + '</p><button class="btn main" type="button" data-start="' + nx.id + '">開始學（約 5 分鐘）</button>';
   $('view').innerHTML = '<p class="coach greet">' + (name ? name + '，' : '') + '您好。今天學一件事就好。</p>' +
     '<div class="calwrap" id="calwrap"><div class="cal">' + calHtml(show) + '<div class="cal-body">' + body + '</div></div></div>' +
-    '<button class="btn" type="button" data-go="stamps">我的印章：' + doneCount() + ' 個（本週學了 ' + weekDays() + ' 天）</button>' + foot();
+    '<button class="btn" type="button" data-go="stamps">我的印章：' + doneCount() + ' 個（本週學了 ' + weekDays() + ' 天）</button><button class="btn" type="button" data-install data-big>📲 加入主畫面</button>' + foot();
   bindInstall();
   if(tearing){
     tearing = false;
@@ -602,16 +613,61 @@ function initMarquee(){
 }
 
 /* ---------- 加入主畫面 ---------- */
-var dp = null, ua = navigator.userAgent || '';
+var dp = null, ua = navigator.userAgent || '', INST_KEY = PREFIX + 'installDone';
 var ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var android = /Android/i.test(ua), phone = ios || android;
+var inLine = /\bLine\//i.test(ua), inApp = inLine || /FBAN|FBAV|FB_IAB|Instagram|MicroMessenger|; wv\)/i.test(ua);
 var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
-window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp = e; });
-window.addEventListener('appinstalled', function(){ dp = null; toast('已加入主畫面'); });
+var SHARE_IC = '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M8 11H5v10h14V11h-3"/></svg>';
+if(standalone) lsSet(INST_KEY, '1');
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); dp = e; bindInstall(); });
+window.addEventListener('appinstalled', function(){ dp = null; instDone(); toast('已加入主畫面'); });
+function instDone(){ lsSet(INST_KEY, '1'); bindInstall(); }
 function bindInstall(){
+  var on = !standalone && !lsGet(INST_KEY) && (phone || dp);
   document.querySelectorAll('[data-install]').forEach(function(b){
-    if(standalone){ b.style.display = 'none'; return; }
-    b.onclick = function(){ var m = ios ? '請按畫面上的「分享」圖示，選「加入主畫面」' : '請按瀏覽器右上角選單，選「加到主畫面」'; if(!dp){ toast(m); return; } try{ dp.prompt(); dp.userChoice.then(function(){ dp = null; }); }catch(e){ toast(m); } };
+    var big = b.hasAttribute('data-big'), dup = on && b.closest('.foot') && document.querySelector('[data-big]');
+    b.style.display = standalone || (big && !on) || dup ? 'none' : '';
+    b.onclick = openInstall;
   });
+}
+function openInstall(){
+  if(dp && !inApp){
+    var p = dp; dp = null;
+    try{ p.prompt(); p.userChoice.then(function(r){ if(r && r.outcome === 'accepted') instDone(); }); return; }catch(e){}
+  }
+  showInstall();
+}
+function instGuide(){
+  var hi = '跟著做，桌面就會多一個「樂齡教練」。', have = '桌面已經有「樂齡教練」就不用再加。';
+  if(inApp) return inLine
+    ? {t:'請先換到瀏覽器', p:'您現在是在 LINE 裡面看這一頁，這裡不能加入主畫面。', s:[], after:'打開後，再按一次「加入主畫面」。'}
+    : {t:'請先換到瀏覽器', p:'您現在是在其他 App 裡面看這一頁，這裡不能加入主畫面。', s:['按右上角的「⋯」。', '按「用瀏覽器開啟」。', '打開後，再按一次「加入主畫面」。']};
+  if(ios) return {t:'加入主畫面', p:doneCount() ? '先看這句：加好後，印章可能不會帶過去。想保留，先到「⚙ 常用設定」的資料備份下載。' : hi, s:['按畫面上的「分享」' + SHARE_IC + '。看不到就先按「⋯」。', '往下滑，按「加入主畫面」。', '按右上角的「新增」。']};
+  if(/SamsungBrowser/i.test(ua)) return {t:'加入主畫面', p:hi, s:['按右下角的三條線「≡」。', '按「新增頁面至」。', '按「主螢幕」。'], after:have};
+  if(android) return {t:'加入主畫面', p:hi, s:['按右上角的三個點「⋮」。', '按「加到主畫面」或「安裝應用程式」。', '再按「安裝」或「新增」。'], after:have};
+  if(/Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Edg|Firefox/.test(ua)) return {t:'加到電腦', p:'在電腦上可以加到 Dock。', s:['按最上方選單的「檔案」。', '按「加入 Dock」。']};
+  return {t:'加到電腦', p:'這一頁最適合用手機看。在電腦上也可以安裝：', s:['按瀏覽器右上角的選單。', '按「安裝」或「將此網站安裝為應用程式」。'], after:'找不到的話，請改用 Chrome 或 Edge。'};
+}
+function showInstall(){
+  var g = instGuide(), plain = [g.p].concat(g.s, g.after ? [g.after] : []).join('\n').replace(/<[^>]+>/g, '').replace(/[⋮⋯≡]/g, '');
+  var html = '<h2 id="instTitle">' + g.t + '</h2><p>' + g.p + '</p>';
+  if(g.s.length) html += '<ol class="steps">' + g.s.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ol>';
+  if(inLine) html += '<a class="btn main" href="' + esc(location.pathname) + '?openExternalBrowser=1">用瀏覽器打開</a>';
+  if(g.after) html += '<p class="muted">' + g.after + '</p>';
+  html += '<div class="inst-act">';
+  var no = '<button class="btn text" type="button" id="instNo">先不要</button>';
+  if(inLine) html += no;
+  else html += (inApp ? '<button class="btn" type="button" id="instCopy">複製網址</button>' : '<button class="btn main" type="button" id="instOk">我加好了</button>') + '<div class="row2">' + readBtn(plain).replace('class="btn"', 'class="btn text"') + no + '</div>';
+  html += '</div>';
+  $('instBox').innerHTML = html; $('inst').classList.add('show'); $('inst').scrollTop = 0;
+  $('instNo').onclick = closeInstall;
+  if($('instOk')) $('instOk').onclick = function(){ closeInstall(); instDone(); toast('下次請從桌面的「樂齡教練」打開'); };
+  if($('instCopy')) $('instCopy').onclick = function(){ copy(location.origin + location.pathname); toast('網址已複製，貼到瀏覽器打開'); };
+}
+function closeInstall(){
+  var m = $('inst'); if(!m.classList.contains('show')) return;
+  m.classList.remove('show'); if(synth) synth.cancel();
 }
 if('serviceWorker' in navigator && location.protocol !== 'file:'){ window.addEventListener('load', function(){ navigator.serviceWorker.register('service-worker.js').catch(function(){}); }); }
 

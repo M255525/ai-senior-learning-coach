@@ -20,7 +20,8 @@
 - Gemini 網頁版實測不吃 `?q=`／`?prompt=`（2026-11-05），只能複製後請長輩貼上，所以跳走前一定要先顯示步驟。倒數結束用 `location.href` 同分頁跳，計時器裡 `window.open` 會被擋。複製要在開新頁之前同步做（`copy()` 先走 execCommand）。疑似詐騙（`isScam`）的問題不自動跳走，留在畫面給 165 按鈕。
 - 防詐騙：`check` 五問（一題一題）、`scenes` 10 題（情境全虛構，簡訊題不放任何連結）。
 - 朗讀 `speechSynthesis`（zh-TW、預設 0.85 倍）；語音輸入 `webkitSpeechRecognition`，不支援時隱藏並提示用鍵盤麥克風。
-- 儲存鍵 `alc.state`、`alc.settings`、`alc.api`、`alc.fold`、`alc.warnSeen`、`alc.marquee`。
+- 加入主畫面：首頁大按鈕（`data-big`，手機或可安裝時才顯示，按過「我加好了」或從桌面開過就收起）＋頁尾／設定小入口。有 `beforeinstallprompt` 就直接跳安裝；否則開 `#inst` 步驟視窗（`instGuide()` 依 iPhone／三星／安卓／電腦分版，不用會消失的 toast）。LINE 內建瀏覽器不能安裝，用 `?openExternalBrowser=1` 換到外部瀏覽器；其他 App 內瀏覽器給步驟＋複製網址。iPhone 桌面版可能和 Safari 不共用 localStorage，已蓋章時在步驟上方提醒先備份。視窗操作鈕 `.inst-act` 黏在底部，小螢幕＋特大字也要看得到。
+- 儲存鍵 `alc.state`、`alc.settings`、`alc.api`、`alc.fold`、`alc.warnSeen`、`alc.marquee`、`alc.installDone`。
 - 標準配備：跑馬燈（工作區公告 GAS，滑鼠移入暫停，不可關）、⚙ 常用設定（收合式＋關於本工具）、首訪警語、manual.html#creator 完整版、PWA、訪客計數器。
 - `manual.html` 由 `tools/build_manual.py` 組出（`tools/manual_body.html`＋賞鳥地圖手冊的創作者區塊），改手冊要改 body 再重跑。
 - 改 `index.html`／`data.js` 上線時要升 `service-worker.js` 的 `CACHE_NAME`。

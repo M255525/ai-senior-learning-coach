@@ -24,6 +24,7 @@ def draw(size, pad=0.0, rounded=True):
     d.line([P(.42, .6), P(.485, .67), P(.595, .535)], fill=RED, width=int(S * .04 * k), joint='curve')
     return im.resize((size, size), Image.LANCZOS)
 os.makedirs(OUT, exist_ok=True)
+draw(180, rounded=False).convert('RGB').save(os.path.join(OUT, 'icon-180.png'))
 draw(192).save(os.path.join(OUT, 'icon-192.png'))
 draw(512).save(os.path.join(OUT, 'icon-512.png'))
 draw(512, pad=.1, rounded=False).save(os.path.join(OUT, 'icon-maskable-512.png'))

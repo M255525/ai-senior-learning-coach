@@ -1,11 +1,12 @@
 // 僅供「加入主畫面」安裝需求使用：network-first + 同源快取備援，不快取跨網域請求。
-const CACHE_NAME = 'ai-senior-learning-coach-shell-v2';
+const CACHE_NAME = 'ai-senior-learning-coach-shell-v3';
 const SHELL_FILES = [
   './',
   './index.html',
   './data.js',
   './manual.html',
   './manifest.json',
+  './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
 ];
