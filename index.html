@@ -410,12 +410,12 @@ function vAsk(){
   var has = !!A.key, html = '<h2>問教練</h2><p class="muted" style="margin-top:-.4rem">有不懂的就問，問幾次都可以。</p>';
   if(hand){
     var nm = aiName(), gem = C.aiSite === 'gemini';
-    html += '<div class="bub me"><small>您問</small>' + esc(hand.q) + '</div>';
-    if(hand.fail) html += '<div class="bub ai coach"><small>教練說</small>這一題內建答案沒有。\n沒有複製成功，請到 ' + nm + ' 把上面這句話打進去。</div>';
+    html = '<h2>問教練</h2>';
+    if(hand.fail) html += '<div class="bub me"><small>您問</small>' + esc(hand.q) + '</div><div class="bub ai coach"><small>教練說</small>這一題內建答案沒有。\n沒有複製成功，請到 ' + nm + ' 把上面這句話打進去。</div>';
     else if(hand.gone) html += '<div class="bub ai coach"><small>教練說</small>看完 ' + nm + ' 的回答，按返回就能回到這裡。</div>';
-    else html += '<div class="bub ai coach"><small>教練說</small>這一題內建答案沒有，教練帶您去問 ' + nm + '。\n' + (gem ? '問題已經幫您複製好了。\n1. 到了以後，手指按住輸入框。\n2. 選「貼上」。\n3. 按送出。' : '問題會自動帶過去。') + '\n記得不要打個人資料。</div><p id="cd" style="font-weight:700;text-align:center">' + hand.left + ' 秒後自動前往</p>';
+    else html += '<div class="bub ai coach"><small>教練說</small>這題帶您去問 ' + nm + '。\n' + (gem ? '問題已複製好，到了以後：\n1. 按住輸入框\n2. 選「貼上」\n3. 按送出' : '問題會自動帶過去。') + '</div><p id="cd" style="font-weight:700;text-align:center;margin:.4rem 0">' + hand.left + ' 秒後自動前往</p>';
     html += '<button class="btn main" type="button" id="goAI">' + (hand.gone || hand.fail ? '到 ' + nm + ' 問這句話' : '現在就去 ' + nm) + '</button>' +
-      '<button class="btn" type="button" id="noAI">' + (hand.gone || hand.fail ? '再問一題' : '先不要去') + '</button>';
+      '<button class="btn" type="button" id="noAI">' + (hand.gone || hand.fail ? '再問一題' : '先不要去') + '</button><p class="muted" style="font-size:.85rem">記得不要打個人資料。</p>';
     $('view').innerHTML = html + foot(); bindInstall();
     $('goAI').onclick = leaveToAI;
     $('noAI').onclick = function(){ var keep = !hand.gone && !hand.fail; stopHand(); if(!keep) askText = ''; vAsk(); window.scrollTo(0, 0); };
