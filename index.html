@@ -209,7 +209,8 @@ function load(k, d){ try{ var v = JSON.parse(lsGet(k)); return v && typeof v ===
 function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
 var S = load(KEY, {done:{}, days:[], torn:'', scamBest:0});
-var C = load(SET_KEY, {fs:0, theme:'normal', rate:0.85, name:'', aiSite:'chatgpt'});
+var C = load(SET_KEY, {fs:0, theme:'normal', rate:0.85, name:'', aiSite:'gemini'});
+if(!C.aiPicked) C.aiSite = 'gemini';
 var A = load(API_KEY, {provider:'gemini', key:'', model:''});
 function save(){ lsSet(KEY, JSON.stringify(S)); }
 function saveSet(){ lsSet(SET_KEY, JSON.stringify(C)); }
@@ -268,15 +269,20 @@ function readBtn(text){ return '<button class="btn" type="button" data-read="' +
 var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
 function toast(m){ var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(function(){ t.classList.remove('show'); }, 3500); }
+/* 先用同步的 execCommand：要在開新頁、切走焦點之前就複製完 */
 function copy(text){
+  var ta = document.createElement('textarea'), ok = false; ta.value = text; ta.readOnly = true; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length); try{ ok = document.execCommand('copy'); }catch(e){} ta.remove();
+  if(ok) return Promise.resolve(true);
   if(navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(function(){ return true; }, function(){ return false; });
-  var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); var ok = false; try{ ok = document.execCommand('copy'); }catch(e){} ta.remove(); return Promise.resolve(ok);
+  return Promise.resolve(false);
 }
 function aiName(){ return C.aiSite === 'gemini' ? 'Gemini' : 'ChatGPT'; }
+function aiUrl(q){ return C.aiSite === 'gemini' ? 'https://gemini.google.com/app' : 'https://chatgpt.com/?q=' + encodeURIComponent(q); }
+function aiHint(){ return C.aiSite === 'gemini' ? '<p class="muted" style="font-size:.85rem">問題會幫您複製好。到了 Gemini，按住輸入框選「貼上」，再按送出。</p>' : ''; }
 function openAI(q){
-  var url = C.aiSite === 'gemini' ? 'https://gemini.google.com/app' : 'https://chatgpt.com/?q=' + encodeURIComponent(q);
-  var w = window.open(url, '_blank', 'noopener');
-  copy(q).then(function(ok){ toast(C.aiSite === 'gemini' ? (ok ? '問題已複製，到 Gemini 按住輸入框選「貼上」' : '請把問題打進 Gemini') : '已打開 ChatGPT'); });
+  var c = copy(q), w = window.open(aiUrl(q), '_blank', 'noopener');
+  c.then(function(ok){ toast(C.aiSite === 'gemini' ? (ok ? '問題已複製，到 Gemini 按住輸入框選「貼上」' : '請把問題打進 Gemini') : '已打開 ChatGPT'); });
   return w;
 }
 
@@ -340,7 +346,7 @@ function vLesson(){
       readBtn(l.say.join('') + '例如：' + l.ex.q + l.ex.a);
   } else if(p.k === 'try'){
     html += '<h2>動手試試看</h2><ol class="steps">' + l.try.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
-    if(l.ask) html += '<div class="bub me"><small>可以這樣問</small>' + esc(l.ask) + '</div><button class="btn" type="button" data-openai="' + esc(l.ask) + '">到 ' + aiName() + ' 問這句話</button>';
+    if(l.ask) html += '<div class="bub me"><small>可以這樣問</small>' + esc(l.ask) + '</div><button class="btn" type="button" data-openai="' + esc(l.ask) + '">到 ' + aiName() + ' 問這句話</button>' + aiHint();
     html += readBtn(l.try.join('')) + '<button class="btn text" type="button" id="stuck">我卡住了，傳給家人</button>';
   } else if(p.k === 'quiz' || p.k === 'review'){
     var q = (p.k === 'review' ? p.l : l).quiz;
@@ -371,7 +377,24 @@ function vLesson(){
 }
 
 /* ---------- 問教練 ---------- */
-var askText = '', askAns = null, busy = false;
+var askText = '', askAns = null, busy = false, hand = null;
+/* 沒金鑰又沒內建答案：點擊當下複製，顯示步驟倒數後同分頁跳走（計時器裡開新分頁會被擋） */
+var HAND_SEC = 8;
+function stopHand(){ if(hand){ clearInterval(hand.t); hand = null; } }
+function startHand(q){
+  stopHand(); askAns = null;
+  var h = hand = {q:q, left:HAND_SEC, url:aiUrl(q)};
+  h.t = setInterval(function(){
+    if(view !== 'ask'){ stopHand(); return; }
+    h.left--;
+    if(h.left <= 0){ jumpAI(); return; }
+    if($('cd')) $('cd').textContent = h.left + ' 秒後自動前往';
+  }, 1000);
+  copy(q).then(function(ok){ if(!ok && hand === h){ clearInterval(h.t); h.fail = true; if(view === 'ask') vAsk(); } });
+  vAsk(); window.scrollTo(0, 0);
+}
+function jumpAI(){ clearInterval(hand.t); hand.gone = true; var u = hand.url; vAsk(); location.href = u; }
+function leaveToAI(){ copy(hand.q); jumpAI(); }
 function guard(q){
   if(/[A-Za-z][12]\d{8}/.test(q) || /\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{1,4}/.test(q)) return {block:1, a:'您打的內容好像有身分證或卡號。\n這些資料不要告訴任何 AI，請把它刪掉再問。'};
   if(/胸痛|胸悶|喘不過氣|中風|昏倒|大量出血|嘴歪|半邊.{0,3}(麻|無力)/.test(q)) return {a:'這可能很緊急，請馬上打 119。\n不要等，也不要自己開車去醫院。', call:'119'};
@@ -385,18 +408,31 @@ function faq(q){
 }
 function vAsk(){
   var has = !!A.key, html = '<h2>問教練</h2><p class="muted" style="margin-top:-.4rem">有不懂的就問，問幾次都可以。</p>';
+  if(hand){
+    var nm = aiName(), gem = C.aiSite === 'gemini';
+    html += '<div class="bub me"><small>您問</small>' + esc(hand.q) + '</div>';
+    if(hand.fail) html += '<div class="bub ai coach"><small>教練說</small>這一題內建答案沒有。\n沒有複製成功，請到 ' + nm + ' 把上面這句話打進去。</div>';
+    else if(hand.gone) html += '<div class="bub ai coach"><small>教練說</small>看完 ' + nm + ' 的回答，按返回就能回到這裡。</div>';
+    else html += '<div class="bub ai coach"><small>教練說</small>這一題內建答案沒有，教練帶您去問 ' + nm + '。\n' + (gem ? '問題已經幫您複製好了。\n1. 到了以後，手指按住輸入框。\n2. 選「貼上」。\n3. 按送出。' : '問題會自動帶過去。') + '\n記得不要打個人資料。</div><p id="cd" style="font-weight:700;text-align:center">' + hand.left + ' 秒後自動前往</p>';
+    html += '<button class="btn main" type="button" id="goAI">' + (hand.gone || hand.fail ? '到 ' + nm + ' 問這句話' : '現在就去 ' + nm) + '</button>' +
+      '<button class="btn" type="button" id="noAI">' + (hand.gone || hand.fail ? '再問一題' : '先不要去') + '</button>';
+    $('view').innerHTML = html + foot(); bindInstall();
+    $('goAI').onclick = leaveToAI;
+    $('noAI').onclick = function(){ var keep = !hand.gone && !hand.fail; stopHand(); if(!keep) askText = ''; vAsk(); window.scrollTo(0, 0); };
+    return;
+  }
   if(askAns){
     html += '<div class="bub me"><small>您問</small>' + esc(askText) + '</div><div class="bub ai coach"><small>教練說</small>' + esc(askAns.a) + '</div>' + readBtn(askAns.a);
     if(askAns.call) html += '<a class="btn red" href="tel:' + askAns.call + '">📞 打 ' + askAns.call + '</a>';
     else if(askAns.scam) html += '<a class="btn red" href="tel:165">📞 打 165 反詐騙專線</a>';
-    if(!askAns.block && !askAns.call) html += '<button class="btn" type="button" data-openai="' + esc(askText) + '">到 ' + aiName() + ' 問這句話</button>';
+    if(!askAns.block && !askAns.call) html += '<button class="btn" type="button" data-openai="' + esc(askText) + '">到 ' + aiName() + ' 問這句話</button>' + aiHint();
     html += '<button class="btn main" type="button" id="again">再問一題</button>';
   } else {
     html += '<textarea id="q" aria-label="想問的問題" placeholder="在這裡打字">' + esc(askText) + '</textarea><div class="row2">' +
       (Rec ? '<button class="btn" type="button" id="mic">🎤 用講的</button>' : '') + '<button class="btn main" type="button" id="send"' + (Rec ? '' : ' style="grid-column:1/-1"') + '>' + (busy ? '教練想一下…' : '問教練') + '</button></div>' +
       (Rec ? '' : '<p class="muted">想用講的，按手機鍵盤上的麥克風。</p>') +
       '<p style="font-weight:700;margin-top:1rem">或按一個常見問題：</p>' + D.quick.map(function(q){ return '<button class="btn" type="button" data-quick="' + esc(q) + '">' + esc(q) + '</button>'; }).join('') +
-      (has ? '' : '<p class="muted" style="font-size:.85rem;margin-top:.7rem">目前用內建答案回答。</p>');
+      (has ? '' : '<p class="muted" style="font-size:.85rem;margin-top:.7rem">目前用內建答案回答；內建沒有的問題，會幫您帶去 ' + aiName() + ' 問。</p>');
   }
   $('view').innerHTML = html + foot(); bindInstall();
   if($('again')) $('again').onclick = function(){ askAns = null; askText = ''; vAsk(); window.scrollTo(0, 0); };
@@ -424,6 +460,7 @@ function ask(q){
       .then(function(){ busy = false; if(view === 'ask'){ vAsk(); window.scrollTo(0, 0); } });
     return;
   }
+  if(!f && !isScam){ startHand(q); return; }
   askAns = f ? {a:f.a, scam:isScam} : {a:'這一題內建答案沒有。\n按下面的按鈕，把問題帶去 ' + aiName() + ' 問。\n記得不要打個人資料。', scam:isScam};
   vAsk(); window.scrollTo(0, 0);
 }
@@ -526,7 +563,7 @@ function applySet(){ document.documentElement.dataset.fs = C.fs; document.docume
 /* ---------- 事件委派 ---------- */
 document.addEventListener('click', function(e){
   var t = e.target.closest('button,a'); if(!t) return; var d = t.dataset;
-  if(d.go){ if(d.go === 'scam') SC = null; if(d.go === 'ask' && !busy){ askAns = null; askText = ''; } go(d.go); }
+  if(d.go){ stopHand(); if(d.go === 'scam') SC = null; if(d.go === 'ask' && !busy){ askAns = null; askText = ''; } go(d.go); }
   else if(d.start) startLesson(d.start);
   else if(d.read !== undefined) speak(d.read, t);
   else if(d.openai) openAI(d.openai);
@@ -539,7 +576,7 @@ document.addEventListener('click', function(e){
   }
   else if(d.c !== undefined){ SC.yes += +d.c; SC.i++; vScam(); window.scrollTo(0, 0); }
   else if(d.s !== undefined){ SC.ans = d.s === '1'; if(SC.ans === D.scenes[SC.i].scam) SC.score++; vScam(); }
-  else if(d.set){ var k = d.set, v = d.v; C[k] = k === 'fs' || k === 'rate' ? +v : v; saveSet(); applySet(); vSettings(); }
+  else if(d.set){ var k = d.set, v = d.v; C[k] = k === 'fs' || k === 'rate' ? +v : v; if(k === 'aiSite') C.aiPicked = 1; saveSet(); applySet(); vSettings(); }
 });
 $('fsBtn').onclick = function(){ C.fs = (C.fs + 1) % 3; saveSet(); applySet(); toast('字體：' + ['標準','大','特大'][C.fs]); };
 $('setBtn').onclick = function(){ go('settings'); };

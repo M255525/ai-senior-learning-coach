@@ -16,7 +16,8 @@
 - 主視覺＝傳統撕日曆（民國紀年、農曆用 `Intl` chinese calendar、宜忌 `almanac` 依日期輪替）。學完蓋章→「撕下今天的日曆」→`S.torn=今天`，首頁顯示明天那一頁＋「還想學，再學一課」。重看舊課（`LS.again`）不撕日曆。
 - 上課 `LS.pages`：[複習?]→say→try→quiz→stamp。答錯也給章。
 - 間隔複習 `GAPS=[1,3,7,14,30]` 天，到期時在開新課前自動插一題（`dueReview`，一天一題），不另開入口。
-- 問教練 `ask()`：先 `guard()`（身分證／卡號擋下；胸痛中風→119；輕生→1925）→有金鑰走 `callLLM`（Gemini／OpenAI／Claude／OpenRouter，失敗退回內建）→否則 `faq()` 關鍵字→都沒有就帶去 ChatGPT／Gemini。單問單答，不是聊天串。
+- 問教練 `ask()`：先 `guard()`（身分證／卡號擋下；胸痛中風→119；輕生→1925）→有金鑰走 `callLLM`（Gemini／OpenAI／Claude／OpenRouter，失敗退回內建）→否則 `faq()` 關鍵字→都沒有就 `startHand()`：點擊當下複製問題，顯示步驟倒數 8 秒後同分頁跳到 Gemini（預設；`C.aiPicked` 記使用者是否親自選過，沒選過一律 Gemini）。單問單答，不是聊天串。
+- Gemini 網頁版實測不吃 `?q=`／`?prompt=`（2026-11-05），只能複製後請長輩貼上，所以跳走前一定要先顯示步驟。倒數結束用 `location.href` 同分頁跳，計時器裡 `window.open` 會被擋。複製要在開新頁之前同步做（`copy()` 先走 execCommand）。疑似詐騙（`isScam`）的問題不自動跳走，留在畫面給 165 按鈕。
 - 防詐騙：`check` 五問（一題一題）、`scenes` 10 題（情境全虛構，簡訊題不放任何連結）。
 - 朗讀 `speechSynthesis`（zh-TW、預設 0.85 倍）；語音輸入 `webkitSpeechRecognition`，不支援時隱藏並提示用鍵盤麥克風。
 - 儲存鍵 `alc.state`、`alc.settings`、`alc.api`、`alc.fold`、`alc.warnSeen`、`alc.marquee`。
