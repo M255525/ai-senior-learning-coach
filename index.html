@@ -208,6 +208,9 @@ html[data-fs="1"] .greet,html[data-fs="2"] .greet,html[data-fs="2"] .cal-yj{disp
 
 <script src="data.js"></script>
 <script>
+/* Gemini 已下架／不存在的模型 ID 自動換成現役模型（2026-11 體檢）：新申請的 AI Studio 金鑰呼叫 2.5／2.0 系列會被拒；也順便去掉多打的空白與 models/ 前綴 */
+function geminiModelFix(m){var r={'gemini-2.5-flash': 'gemini-3.6-flash', 'gemini-2.5-flash-lite': 'gemini-3.5-flash-lite', 'gemini-2.5-pro': 'gemini-3.8-flash', 'gemini-2.0-flash': 'gemini-3.6-flash', 'gemini-2.0-flash-001': 'gemini-3.6-flash', 'gemini-2.0-flash-lite': 'gemini-3.1-flash-lite', 'gemini-1.5-flash': 'gemini-3.6-flash', 'gemini-1.5-pro': 'gemini-3.1-pro-preview', 'gemini-3-pro': 'gemini-3.1-pro-preview', 'gemini-3-pro-preview': 'gemini-3.1-pro-preview', 'gemini-3.5-pro': 'gemini-3.1-pro-preview', 'gemini-3.1-flash-lite-preview': 'gemini-3.1-flash-lite'};m=String(m||'').trim().replace(/^models\//,'');return r[m]||m;}
+
 (function(){
 'use strict';
 var D = window.COACH_DATA, L = D.lessons, $ = function(id){ return document.getElementById(id); };
@@ -476,12 +479,12 @@ function ask(q){
   vAsk(); window.scrollTo(0, 0);
 }
 var SYS = '你是「樂齡學習教練」，對象是 60 歲以上、不熟悉科技的台灣長輩。用繁體中文（台灣用語）、尊稱「您」，語氣溫和不說教，不用專業術語、不用 Markdown 符號。回答最多 5 行，每行一句短句；操作問題分步驟。不做醫療診斷、不建議用藥、不給投資建議，這類問題請對方問醫師、藥師或專業人員。涉及匯款、投資、陌生連結一律提醒可能是詐騙並請打 165。提醒不要提供身分證字號、帳號、密碼。';
-var MODELS = {gemini:'gemini-2.5-flash', openai:'gpt-5-mini', claude:'claude-haiku-5-5', openrouter:'openai/gpt-5-mini'};
+var MODELS = {gemini:'gemini-3.6-flash', openai:'gpt-5-mini', claude:'claude-haiku-5-5', openrouter:'openai/gpt-5-mini'};
 function callLLM(q){
   var m = A.model || MODELS[A.provider], p, url;
   function j(r){ if(!r.ok) throw new Error(r.status); return r.json(); }
   if(A.provider === 'gemini'){
-    return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(m) + ':generateContent', {method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':A.key}, body:JSON.stringify({systemInstruction:{parts:[{text:SYS}]}, contents:[{role:'user', parts:[{text:q}]}]})})
+    return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(geminiModelFix(m)) + ':generateContent', {method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':A.key}, body:JSON.stringify({systemInstruction:{parts:[{text:SYS}]}, contents:[{role:'user', parts:[{text:q}]}]})})
       .then(j).then(function(d){ return d.candidates[0].content.parts.map(function(x){ return x.text || ''; }).join('').trim(); });
   }
   if(A.provider === 'claude'){
